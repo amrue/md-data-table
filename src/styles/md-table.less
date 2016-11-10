@@ -76,6 +76,15 @@ table.md-table {
       cursor: pointer;
     }
 
+     .md-drag-handle {
+      background-color: rgb(238,238,238);
+      cursor: col-resize;
+      float: right;
+      height: 20px;
+      visibility: hidden;
+      width: 4px;
+    }
+
     md-icon {
       height: 16px;
       width: 16px;
@@ -108,6 +117,10 @@ table.md-table {
     &.md-active,
     &.md-active md-icon {
       color: @md-dark;
+    }
+
+    &:hover > .md-drag-handle {
+      visibility: visible;
     }
 
     &:hover md-icon.md-sort-icon,

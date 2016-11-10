@@ -185,11 +185,77 @@ function mdColumn($compile, $mdUtil) {
   function postLink(scope, element, attrs, ctrls) {
     var headCtrl = ctrls.shift();
     var tableCtrl = ctrls.shift();
+    var sortIcon;
+
+    // drag resize vars
+    var style = window.getComputedStyle(element[0], null),
+        w,
+        h,
+        start,
+        dragDir,
+        axis;
+
+    var dragging = function(e) {
+        var prop, offset = axis === 'x' ? start - e.clientX : start - e.clientY;
+        prop = scope.rFlex ? flexBasis : 'width';
+        element[0].style[prop] = w - offset + 'px';
+    };
+
+    var dragEnd = function(e) {
+        scope.$apply();
+        document.removeEventListener('mouseup', dragEnd, false);
+        document.removeEventListener('mousemove', dragging, false);
+        element.removeClass('no-transition');
+    };
+
+    var dragStart = function(e, direction) {
+        dragDir = direction;
+        axis = dragDir === 'left' || dragDir === 'right' ? 'x' : 'y';
+        start = axis === 'x' ? e.clientX : e.clientY;
+        w = parseInt(style.getPropertyValue('width'));
+        h = parseInt(style.getPropertyValue('height'));
+
+        //prevent transition while dragging
+        element.addClass('no-transition');
+
+        document.addEventListener('mouseup', dragEnd, false);
+        document.addEventListener('mousemove', dragging, false);
+
+        // Disable highlighting while dragging
+        if(e.stopPropagation) e.stopPropagation();
+        if(e.preventDefault) e.preventDefault();
+        e.cancelBubble = true;
+        e.returnValue = false;
+
+        scope.$apply();
+    };
+
+    function enableResizeOnElement(element, direction) {
+        element.ondragstart = function() { return false; };
+        element.addEventListener('mousedown', function(e) {
+            var disabled = (scope.rDisabled === 'true');
+            if (!disabled && e.which === 1) {
+                // left mouse click
+                dragStart(e, direction);
+            }
+        }, false);
+    }
+
+    function attachDragHandle() {
+      var dragHandle = angular.element("<div class='md-drag-handle'>");
+
+      $compile(dragHandle)(scope);
+
+      if(!element.hasClass('md-numeric')) {
+        element.append(dragHandle);
+        enableResizeOnElement(element[0], 'right')
+      }
+    }
 
     function attachSortIcon() {
-      var sortIcon = angular.element('<md-icon md-svg-icon="arrow-up.svg">');
+      sortIcon = angular.element('<md-icon md-svg-icon="arrow-up.svg">');
 
-      $compile(sortIcon.addClass('md-sort-icon').attr('ng-class', 'getDirection()'))(scope);
+      $compile(sortIcon.addClass('md-sort-icon').attr('ng-class','getDirection()'))(scope);
 
       if(element.hasClass('md-numeric')) {
         element.prepend(sortIcon);
@@ -206,12 +272,16 @@ function mdColumn($compile, $mdUtil) {
 
     function disableSorting() {
       detachSortIcon();
-      element.removeClass('md-sort').off('click', setOrder);
+      sortIcon.removeClass('md-sort').off('click', setOrder);
     }
 
     function enableSorting() {
       attachSortIcon();
-      element.addClass('md-sort').on('click', setOrder);
+      sortIcon.addClass('md-sort').on('click', setOrder);
+    }
+
+    function enableDragResize() {
+      attachDragHandle();
     }
 
     function getIndex() {
@@ -224,6 +294,10 @@ function mdColumn($compile, $mdUtil) {
 
     function isNumeric() {
       return attrs.mdNumeric === '' || scope.numeric;
+    }
+
+    function isResize() {
+      return attrs.mdResize === '' || scope.resize;
     }
 
     function setOrder() {
@@ -276,6 +350,12 @@ function mdColumn($compile, $mdUtil) {
       updateColumn(getIndex(), {'numeric': numeric});
     });
 
+    scope.$watch(isResize, function (resize) {
+      if(resize) {
+          enableDragResize();
+      }
+    });
+
     scope.$watch('orderBy', function (orderBy) {
       if(orderBy) {
         if(!element.hasClass('md-sort')) {
@@ -293,12 +373,14 @@ function mdColumn($compile, $mdUtil) {
     restrict: 'A',
     scope: {
       numeric: '=?mdNumeric',
-      orderBy: '@?mdOrderBy'
+      orderBy: '@?mdOrderBy',
+      resize: '=?mdResize'
     }
   };
 }
 
 mdColumn.$inject = ['$compile', '$mdUtil'];
+
 
 angular.module('md.data.table')
   .decorator('$controller', controllerDecorator)
