@@ -247,12 +247,12 @@ table.md-table th.md-column.md-sort {
   cursor: pointer;
 }
 table.md-table th.md-column .md-drag-handle {
-  background-color: #eeeeee;
+  background-color: #2196f3;
   cursor: col-resize;
   float: right;
   height: 20px;
   visibility: hidden;
-  width: 4px;
+  width: 1px;
 }
 table.md-table th.md-column md-icon {
   height: 16px;
