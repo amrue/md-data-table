@@ -23,7 +23,7 @@ function mdColumn($compile, $mdUtil) {
         axis;
 
     var dragging = function(e) {
-        var prop, offset = axis === 'x' ? start - e.clientX : start - e.clientY;
+        var prop, offset = start - e.clientX;
         prop = scope.rFlex ? flexBasis : 'width';
         element[0].style[prop] = w - offset + 'px';
     };
